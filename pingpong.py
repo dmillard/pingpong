@@ -143,5 +143,19 @@ def record():
 
 
 if __name__ == '__main__':
-    app.secret_key = 'C~;Ejv-9N5tTkVJ3m@$_}u]?hn6HLI#e'
+    # set secret key for sessions
+    import string
+    import os.path
+    from random import SystemRandom
+    r = SystemRandom()
+    key_chars = string.ascii_letters + string.digits + string.punctuation
+    cwd = os.path.abspath(os.path.dirname(__file__))
+    try:
+        with open(os.path.join(cwd, 'key.json'), 'r') as f:
+            app.secret_key = json.load(f)['key']
+    except:
+        app.secret_key = ''.join(r.choice(key_chars) for i in range(64))
+        with open(os.path.join(cwd, 'key.json'), 'w') as f:
+            json.dump({'key' : app.secret_key}, f)
+    
     app.run(debug=True)
