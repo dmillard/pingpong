@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Photos Team Ping Pong Ladder</title>
+    <link rel="stylesheet"
+    href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
+    <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="//code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+    <script>
+    $(function() {$("#date").datepicker();});
+    $(function() {
+    var aliases=[
+        {% for alias in aliases %}
+        "{{alias[0]}}",
+        {% endfor %}
+    ];
+    $("#p1").autocomplete({source: aliases});
+    $("#p2").autocomplete({source: aliases});
+    });
+    </script>
+    <style>
+    .ui-widget {font-size: 75%;}
+    </style>
+</head>
+<body>
+<marquee width=400><b>PHOTOS TEAM PING PONG LADDER</b></marquee>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<p>
+<h1>Errors</h1>
+<ul>
+    {% for message in messages %}
+    <li>{{message}}</li>
+    {% endfor %}
+</ul>
+</p>
+{% endif %}
+{% endwith %}
+
+<p>
+<form action="{{url_for("signup")}}" method="post">
+    <h1>Sign up to play!</h1>
+    <label for="alias">Alias: </label>
+    <input type="text" id="alias" name="alias" />
+    <label for="nick">Nickname: </label>
+    <input type="text" id="nick" name="nick" />
+    <button type="submit">Sign up</button>
+</form>
+</p>
+
+<p>
+    <h1>Ladder</h1>
+    <table border="1">
+    <tr>
+        <td>rank</td>
+        <td>alias</td>
+        <td>nickname</td>
+        <td>mu</td>
+        <td>sigma</td>
+        <td>won</td>
+        <td>lost</td>
+    </tr>
+    {% for player in players %}
+    <tr>
+        <td>{{player["rank"] | round(4)}}</td>
+        <td>{{player["alias"]}}</td>
+        <td>{{player["nick"]}}</td>
+        <td>{{player["mu"] | round(4)}}</td>
+        <td>{{player["sigma"] | round(4)}}</td>
+        <td>{{player["won"]}}</td>
+        <td>{{player["lost"]}}</td>
+    </tr>
+    {% endfor %}
+    </table>
+</p>
+
+<p>
+<form action="{{url_for("record")}}" method="post">
+    <h1>Record a match</h1>
+    <label for="p1">Player 1: </label>
+    <input type="text" id="p1" name="p1" placeholder="alias" />
+    <label for="s1">Score: </label>
+    <input type="text" id="s1" name="s1" size="3"/>
+    <br/>
+    <label for="p2">Player 2: </label>
+    <input type="text" id="p2" name="p2" placeholder="alias" />
+    <label for="s2">Score: </label>
+    <input type="text" id="s2" name="s2" size="3"/>
+    <br/>
+    <label for="date">Date: </label>
+    <input type="text" id="date" name="date" />
+    <label for="time">Time: </label>
+    <input type="text" id="time" name="time" placeholder="hh:mm" />
+    <input type="checkbox" id="ampm" name="ampm" value="pm" checked=true />
+    <label for="ampm">PM</label>
+    <br/>
+    <button type="submit">Record</button>
+</form>
+</p>
+</body>
+</html>
