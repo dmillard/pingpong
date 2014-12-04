@@ -2,6 +2,7 @@ import sqlite3
 import trueskill as ts
 from random import shuffle
 from datetime import datetime
+from ranking import Ranking
 from flask import *
 app = Flask(__name__)
 
@@ -36,8 +37,7 @@ CREATE TABLE IF NOT EXISTS match (
 CREATE TABLE IF NOT EXISTS schedule (
     id INTEGER PRIMARY KEY,
     p1 REFERENCES player,
-    p2 REFERENCES player,
-    quality REAL
+    p2 REFERENCES player
 );
 
 CREATE INDEX IF NOT EXISTS scheduleplayers ON schedule (p1, p2);
@@ -65,6 +65,8 @@ def close_connection(exception):
 def index():
     db = get_db()
     players = db.execute('SELECT * FROM player ORDER BY exposure DESC;')
+    players = Ranking(players.fetchall(), start=1,
+            key=lambda x: x['exposure'])
     aliases = db.execute('SELECT alias FROM player ORDER BY alias;')
     recents = db.execute('''
             SELECT w.alias, l.alias, winscore, losescore, scheduled
@@ -90,28 +92,31 @@ def index():
         matches = []
         for i in range(0, len(players2), 2):
             p1 = players2[i]
-            r1 = ts.Rating(p1['mu'], p1['sigma'])
             p2 = players2[i+1]
-            r2 = ts.Rating(p2['mu'], p2['sigma'])
-            quality = ts.quality_1vs1(r1, r2) * 100
-            matches.append((p1['id'], p2['id'], quality))
+            matches.append((p1['id'], p2['id']))
 
         db.executemany('''
-            INSERT INTO schedule (p1, p2, quality)
-            VALUES (?, ?, ?);''',
+            INSERT INTO schedule (p1, p2)
+            VALUES (?, ?);''',
             matches)
 
         db.commit()
 
     schedule = db.execute('''
-        SELECT p1.alias, p2.alias, quality 
+        SELECT p1.alias, p2.alias, p1.mu, p1.sigma, p2.mu, p2.sigma
         FROM schedule
         JOIN player p1 ON p1 = p1.id
-        JOIN player p2 ON p2 = p2.id;''')
+        JOIN player p2 ON p2 = p2.id;''').fetchall()
+
+    qualities = []
+    for match in schedule:
+        r1 = ts.Rating(match[2], match[3])
+        r2 = ts.Rating(match[4], match[5])
+        qualities.append(ts.quality_1vs1(r1, r2) * 100)
 
     return render_template('index.html',
             players=players, aliases=aliases, recents=recents,
-            schedule=schedule, rankedweek=(week%2==1))
+            schedule=zip(schedule, qualities), rankedweek=(week%2==1))
 
 
 @app.route('/signup', methods=['POST'])
@@ -144,9 +149,9 @@ def record():
     p2 = request.form['p2']
     s2 = int(request.form['s2'])
 
-    if (not (0 < s1 < 2 or 0 < s2 < 2) or
+    if (not (0 <= s1 < 2 or 0 <= s2 < 2) or
         not (s1 == 2 or s2 == 2) or
-        s1+s2 > 3):
+        not 2 <= s1+s2 <= 3):
         flash('Ladder is based on 3 game matches only')
         return redirect(url_for('index'))
 
@@ -218,6 +223,17 @@ def record():
     
     return redirect(url_for('index'))
 
+@app.route('/matches', methods=['GET'])
+def matches():
+    db = get_db()
+    recents = db.execute('''
+            SELECT w.alias, l.alias, winscore, losescore, scheduled, date
+            FROM match
+            JOIN player w ON winner = w.id
+            JOIN player l ON loser = l.id
+            ORDER BY date DESC;''')
+
+    return render_template('matches.html', recents=recents)
 
 if __name__ == '__main__':
     # set secret key for sessions

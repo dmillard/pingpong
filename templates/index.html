@@ -28,77 +28,81 @@
 
 {% with messages = get_flashed_messages() %}
 {% if messages %}
-<p>
 <h1>Errors</h1>
 <ul>
     {% for message in messages %}
     <li>{{message}}</li>
     {% endfor %}
 </ul>
-</p>
 {% endif %}
 {% endwith %}
 
+<h1>Sign up to play!</h1>
 <p>
+New players: quick rules are at the bottom of this page.
+</p>
 <form action="{{url_for("signup")}}" method="post">
-    <h1>Sign up to play!</h1>
     <label for="alias">Alias: </label>
     <input type="text" id="alias" name="alias" />
     <label for="nick">Nickname: </label>
     <input type="text" id="nick" name="nick" />
     <button type="submit">Sign up</button>
 </form>
-</p>
 
-<p>
-    <h1>Ladder</h1>
-    <table border="1">
-    <tr>
-        <td>rating</td>
-        <td>alias</td>
-        <td>nickname</td>
-        <td>mu</td>
-        <td>sigma</td>
-        <td>won</td>
-        <td>lost</td>
-    </tr>
-    {% for player in players %}
-    <tr>
-        <td>{{player["exposure"] | round(4)}}</td>
-        <td>{{player["alias"]}}</td>
-        <td>{{player["nick"]}}</td>
-        <td>{{player["mu"] | round(4)}}</td>
-        <td>{{player["sigma"] | round(4)}}</td>
-        <td>{{player["won"]}}</td>
-        <td>{{player["lost"]}}</td>
-    </tr>
-    {% endfor %}
-    </table>
-</p>
+<h1>Ladder</h1>
+<table border="1">
+<tr>
+    <td>rank</td>
+    <td>alias</td>
+    <td>nickname</td>
+    <td>mu</td>
+    <td>sigma</td>
+    <td>won</td>
+    <td>lost</td>
+</tr>
+{% for rank, player in players %}
+<tr>
+    <td>{{rank}}</td>
+    <td>{{player["alias"]}}</td>
+    <td>{{player["nick"]}}</td>
+    <td>{{player["mu"] | round(4)}}</td>
+    <td>{{player["sigma"] | round(4)}}</td>
+    <td>{{player["won"]}}</td>
+    <td>{{player["lost"]}}</td>
+</tr>
+{% endfor %}
+</table>
 
-<p>
 <h1>Scheduled matches</h1>
+<p>
+Scheduled matches alternate weekly between ranked and random.
+<br/>
+This week is a
+<b>{% if rankedweek %}ranked{% else %}random{% endif %}</b>
+week.
+</p>
 <table border="1">
 <tr>
 <td>player 1</td>
 <td>player 2</td>
 <td>draw %</td>
 </tr>
-{% for match in schedule %}
+{% for match, quality in schedule %}
 <tr>
 <td>{{match[0]}}</td>
 <td>{{match[1]}}</td>
-<td>{{match['quality'] | round(2)}}%</td>
+<td>{{quality | round(2)}}%</td>
 </tr>
 {% endfor %}
 </table>
-</p>
 
+<h1>Record a match</h1>
 <p>
+The photos team ladder accepts only 3-game matches.
+<br/>
+Recording a scheduled game will automatically remove it from the schedule.
+</p>
 <form action="{{url_for("record")}}" method="post">
-    <h1>Record a match</h1>
-    Photos team ladder is ranked only by the outcome of a 3-game match.
-    <br/>
     <label for="p1">Player 1: </label>
     <input type="text" id="p1" name="p1" placeholder="alias" />
     <label for="s1">Games won: </label>
@@ -118,12 +122,13 @@
     <br/>
     <button type="submit">Record</button>
 </form>
-</p>
 
-<p>
 <h1>Recent matches</h1>
+<p>
+View entire match history <a href="{{url_for('matches')}}">here</a>.
+<br/>
 Scheduled matches are highlighted in yellow.
-</br>
+</p>
 <table border="1">
 <tr>
 <td>winner</td>
@@ -141,8 +146,34 @@ Scheduled matches are highlighted in yellow.
 <td>{{recent['winscore']}}-{{recent['losescore']}}</td>
 </tr>
 {% endfor %}
-<table>
-</p>
+</table>
+
+<h1>Quick rules</h1>
+For disputes, see the 
+<a href="http://www.ittf.com/ittf_handbook/ittf_hb.html">
+    official handbook
+</a>.
+<ul>
+    <li>Matches are played "best of three" to 11</li>
+    <li>Players decide by a method of their own choosing who serves first</li>
+    <li>Components to a legal serve:</li>
+    <ul>
+        <li>The ball rests in the server's open palm</li>
+        <li>The ball is tossed a minimum of 6 inches in the air</li>
+        <li>Before the ball hits the table, the server strikes the ball</li>
+        <li>The ball hits once on the server's side of the table, and then once on the
+        receiver's side of the table</li>
+        <li>If a serve is legal except that it touches the net, it is called a "let" and
+        the point is replayed</li>
+        <li>After two consecutive lets, the point goes to the receiver</li>
+    </ul>
+    <li>After two points have been scored by either player, service switches</li>
+    <li>If the score of a game becomes 10-10</li>
+    <ul>
+        <li>Players must win by two points</li>
+        <li>Service switches every point</li>
+    </ul>
+</ul>
 
 </body>
 </html>
