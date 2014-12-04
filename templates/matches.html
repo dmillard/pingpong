@@ -5,7 +5,7 @@
     <title>Photos Team Ping Pong Ladder</title>
 </head>
 <body>
-<marquee width=400><b>PHOTOS TEAM PING PONG LADDER</b></marquee>
+{% include "header.html" %}
 
 <h1>Match history</h1>
 Scheduled matches are highlighted in yellow.
@@ -31,5 +31,6 @@ Scheduled matches are highlighted in yellow.
 {% endfor %}
 <table>
 
+{% include "footer.html" %}
 </body>
 </html>

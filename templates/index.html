@@ -24,7 +24,7 @@
     </style>
 </head>
 <body>
-<marquee width=400><b>PHOTOS TEAM PING PONG LADDER</b></marquee>
+{% include "header.html" %}
 
 {% with messages = get_flashed_messages() %}
 {% if messages %}
@@ -151,8 +151,7 @@ Scheduled matches are highlighted in yellow.
 <h1>Quick rules</h1>
 For disputes, see the 
 <a href="http://www.ittf.com/ittf_handbook/ittf_hb.html">
-    official handbook
-</a>.
+    official handbook</a>.
 <ul>
     <li>Matches are played "best of three" to 11</li>
     <li>Players decide by a method of their own choosing who serves first</li>
@@ -167,7 +166,7 @@ For disputes, see the
         the point is replayed</li>
         <li>After two consecutive lets, the point goes to the receiver</li>
     </ul>
-    <li>After two points have been scored by either player, service switches</li>
+    <li>After two points have been scored (i.e. the sum of the scores is even), service switches</li>
     <li>If the score of a game becomes 10-10</li>
     <ul>
         <li>Players must win by two points</li>
@@ -175,5 +174,6 @@ For disputes, see the
     </ul>
 </ul>
 
+{% include "footer.html" %}
 </body>
 </html>
