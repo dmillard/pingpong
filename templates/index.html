@@ -54,7 +54,7 @@
     <h1>Ladder</h1>
     <table border="1">
     <tr>
-        <td>rank</td>
+        <td>rating</td>
         <td>alias</td>
         <td>nickname</td>
         <td>mu</td>
@@ -64,7 +64,7 @@
     </tr>
     {% for player in players %}
     <tr>
-        <td>{{player["rank"] | round(4)}}</td>
+        <td>{{player["exposure"] | round(4)}}</td>
         <td>{{player["alias"]}}</td>
         <td>{{player["nick"]}}</td>
         <td>{{player["mu"] | round(4)}}</td>
@@ -77,16 +77,36 @@
 </p>
 
 <p>
+<h1>Scheduled matches</h1>
+<table border="1">
+<tr>
+<td>player 1</td>
+<td>player 2</td>
+<td>draw %</td>
+</tr>
+{% for match in schedule %}
+<tr>
+<td>{{match[0]}}</td>
+<td>{{match[1]}}</td>
+<td>{{match['quality'] | round(2)}}%</td>
+</tr>
+{% endfor %}
+</table>
+</p>
+
+<p>
 <form action="{{url_for("record")}}" method="post">
     <h1>Record a match</h1>
+    Photos team ladder is ranked only by the outcome of a 3-game match.
+    <br/>
     <label for="p1">Player 1: </label>
     <input type="text" id="p1" name="p1" placeholder="alias" />
-    <label for="s1">Score: </label>
+    <label for="s1">Games won: </label>
     <input type="text" id="s1" name="s1" size="3"/>
     <br/>
     <label for="p2">Player 2: </label>
     <input type="text" id="p2" name="p2" placeholder="alias" />
-    <label for="s2">Score: </label>
+    <label for="s2">Games won: </label>
     <input type="text" id="s2" name="s2" size="3"/>
     <br/>
     <label for="date">Date: </label>
@@ -99,5 +119,30 @@
     <button type="submit">Record</button>
 </form>
 </p>
+
+<p>
+<h1>Recent matches</h1>
+Scheduled matches are highlighted in yellow.
+</br>
+<table border="1">
+<tr>
+<td>winner</td>
+<td>loser</td>
+<td>score</td>
+</tr>
+{% for recent in recents %}
+{% if recent['scheduled'] %}
+<tr style="background-color: yellow">
+{% else %}
+<tr>
+{% endif %}
+<td>{{recent[0]}}</td>
+<td>{{recent[1]}}</td>
+<td>{{recent['winscore']}}-{{recent['losescore']}}</td>
+</tr>
+{% endfor %}
+<table>
+</p>
+
 </body>
 </html>

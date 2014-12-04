@@ -1,5 +1,6 @@
 import sqlite3
 import trueskill as ts
+from random import shuffle
 from datetime import datetime
 from flask import *
 app = Flask(__name__)
@@ -11,7 +12,7 @@ PRAGMA foreign_keys = ON;
             
 CREATE TABLE IF NOT EXISTS player (
     id INTEGER PRIMARY KEY,
-    rank REAL, -- result of trueskill.exposure()
+    exposure REAL, -- result of trueskill.exposure()
     alias TEXT UNIQUE, -- msft alias
     nick TEXT UNIQUE, -- nickname
     mu REAL,
@@ -20,7 +21,7 @@ CREATE TABLE IF NOT EXISTS player (
     lost INTEGER
 );
 
-CREATE INDEX IF NOT EXISTS rank ON player (rank);
+CREATE INDEX IF NOT EXISTS exposure ON player (exposure);
 
 CREATE TABLE IF NOT EXISTS match (
     id INTEGER PRIMARY KEY,
@@ -28,7 +29,21 @@ CREATE TABLE IF NOT EXISTS match (
     loser REFERENCES player,
     winscore INTEGER,
     losescore INTEGER,
-    date DATETIME
+    date DATETIME,
+    scheduled BOOLEAN
+);
+
+CREATE TABLE IF NOT EXISTS schedule (
+    id INTEGER PRIMARY KEY,
+    p1 REFERENCES player,
+    p2 REFERENCES player,
+    quality REAL
+);
+
+CREATE INDEX IF NOT EXISTS scheduleplayers ON schedule (p1, p2);
+
+CREATE TABLE IF NOT EXISTS week (
+    week INTEGER
 );
 '''
 
@@ -49,11 +64,54 @@ def close_connection(exception):
 @app.route('/', methods=['GET'])
 def index():
     db = get_db()
-    players = db.execute('SELECT * FROM player ORDER BY rank DESC;')
+    players = db.execute('SELECT * FROM player ORDER BY exposure DESC;')
     aliases = db.execute('SELECT alias FROM player ORDER BY alias;')
+    recents = db.execute('''
+            SELECT w.alias, l.alias, winscore, losescore, scheduled
+            FROM match
+            JOIN player w ON winner = w.id
+            JOIN player l ON loser = l.id
+            ORDER BY date DESC LIMIT 10;''')
+
+    # get or regenerate the schedule
+    weekrow = db.execute('SELECT * FROM week;').fetchone();
+    week = datetime.now().isocalendar()[1]
+    if weekrow is None or weekrow['week'] != week:
+        db.execute('DELETE FROM schedule;')
+        db.execute('DELETE FROM week;')
+        db.execute('INSERT INTO week VALUES (?);', (week,))
+
+        players2 = db.execute(
+                'SELECT * FROM player ORDER BY exposure DESC;').fetchall()
+        if week % 2 == 0: # random week
+            shuffle(players2)
+        players2 = players2[:len(players2)//2*2] # even the number
+
+        matches = []
+        for i in range(0, len(players2), 2):
+            p1 = players2[i]
+            r1 = ts.Rating(p1['mu'], p1['sigma'])
+            p2 = players2[i+1]
+            r2 = ts.Rating(p2['mu'], p2['sigma'])
+            quality = ts.quality_1vs1(r1, r2) * 100
+            matches.append((p1['id'], p2['id'], quality))
+
+        db.executemany('''
+            INSERT INTO schedule (p1, p2, quality)
+            VALUES (?, ?, ?);''',
+            matches)
+
+        db.commit()
+
+    schedule = db.execute('''
+        SELECT p1.alias, p2.alias, quality 
+        FROM schedule
+        JOIN player p1 ON p1 = p1.id
+        JOIN player p2 ON p2 = p2.id;''')
 
     return render_template('index.html',
-            players=players, aliases=aliases)
+            players=players, aliases=aliases, recents=recents,
+            schedule=schedule, rankedweek=(week%2==1))
 
 
 @app.route('/signup', methods=['POST'])
@@ -63,7 +121,7 @@ def signup():
         rating = ts.Rating()
         db.execute('''
             INSERT INTO
-            player (alias, nick, mu, sigma, rank, won, lost)
+            player (alias, nick, mu, sigma, exposure, won, lost)
             VALUES (?, ?, ?, ?, ?, 0, 0);''',
             (request.form['alias'],
              request.form['nick'],
@@ -86,9 +144,28 @@ def record():
     p2 = request.form['p2']
     s2 = int(request.form['s2'])
 
-    if p1 == p2:
-        flash("Aliases playing in a match must be different.")
+    if (not (0 < s1 < 2 or 0 < s2 < 2) or
+        not (s1 == 2 or s2 == 2) or
+        s1+s2 > 3):
+        flash('Ladder is based on 3 game matches only')
         return redirect(url_for('index'))
+
+    if p1 == p2:
+        flash('Match players must be different.')
+        return redirect(url_for('index'))
+
+    # check if this was a scheduled match
+    scheduledrow = db.execute('''
+        SELECT (s.id)
+        FROM schedule s
+        JOIN player p1 ON s.p1 = p1.id
+        JOIN player p2 ON s.p2 = p2.id
+        WHERE p1.alias=? AND p2.alias=?
+        OR p1.alias=? AND p2.alias=?;''',
+        (p1, p2, p2, p1)).fetchone()
+    scheduled = scheduledrow is not None
+    if scheduled:
+        db.execute('DELETE FROM schedule WHERE id=?;', (scheduledrow[0],))
 
     if s1 > s2:
         win_alias, win_score, lose_alias, lose_score = p1, s1, p2, s2
@@ -102,11 +179,11 @@ def record():
     
     db.execute('''
         INSERT INTO 
-        match (winner, loser, winscore, losescore, date)
-        SELECT w.id, l.id, ?, ?, ?
+        match (winner, loser, winscore, losescore, date, scheduled)
+        SELECT w.id, l.id, ?, ?, ?, ?
         FROM player w JOIN player l
         WHERE w.alias = ? AND l.alias = ?;''',
-        (win_score, lose_score, date, win_alias, lose_alias))
+        (win_score, lose_score, date, scheduled, win_alias, lose_alias))
 
     def get_rating(alias):
         sql = 'SELECT mu, sigma FROM player WHERE alias=?;'
@@ -122,20 +199,20 @@ def record():
         return redirect(url_for('index'))
 
     win_rating, lose_rating = ts.rate_1vs1(win_rating, lose_rating)
-    win_rank = ts.expose(win_rating);
-    lose_rank = ts.expose(lose_rating);
+    win_exposure = ts.expose(win_rating);
+    lose_exposure = ts.expose(lose_rating);
 
     db.execute('''
         UPDATE player 
-        SET rank=?, mu=?, sigma=?, won=won+1
+        SET exposure=?, mu=?, sigma=?, won=won+1
         WHERE alias=?;''',
-        (win_rank, win_rating.mu, win_rating.sigma, win_alias));
+        (win_exposure, win_rating.mu, win_rating.sigma, win_alias));
 
     db.execute('''
         UPDATE player 
-        SET rank=?, mu=?, sigma=?, lost=lost+1
+        SET exposure=?, mu=?, sigma=?, lost=lost+1
         WHERE alias=?;''',
-        (lose_rank, lose_rating.mu, lose_rating.sigma, lose_alias));
+        (lose_exposure, lose_rating.mu, lose_rating.sigma, lose_alias));
     
     db.commit()
     
@@ -158,4 +235,4 @@ if __name__ == '__main__':
         with open(os.path.join(cwd, 'key.json'), 'w') as f:
             json.dump({'key' : app.secret_key}, f)
     
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
