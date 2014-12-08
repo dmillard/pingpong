@@ -75,6 +75,9 @@ New players: quick rules are at the bottom of this page.
 
 <h1>Scheduled matches</h1>
 <p>
+Not playing a scheduled game within the week without an explanation to the
+league commissioner (damilla) is equivalent to a loss to an unranked player.
+<br/>
 Scheduled matches alternate weekly between ranked and random.
 <br/>
 This week is a
@@ -100,7 +103,13 @@ week.
 <p>
 The photos team ladder accepts only 3-game matches.
 <br/>
+<b>The winner should record the match.  Please avoid unintentional
+    duplicates.</b>
+<br/>
 Recording a scheduled game will automatically remove it from the schedule.
+<br/>
+All recorded matches affect the ladder; if you don't want it to change ranking,
+don't record it (but agree before the match!)
 </p>
 <form action="{{url_for("record")}}" method="post">
     <label for="p1">Player 1: </label>
@@ -154,12 +163,17 @@ For disputes, see the
     official handbook</a>.
 <ul>
     <li>Matches are played "best of three" to 11</li>
-    <li>Players decide by a method of their own choosing who serves first</li>
+    <li>Players decide by a method of their own choosing one player to serve or
+    return first (returner chooses table sides)</li>
+    <li>Players swap table sides between games, and every five points during the
+    final game</li>
     <li>Components to a legal serve:</li>
     <ul>
         <li>The ball rests in the server's open palm</li>
         <li>The ball is tossed a minimum of 6 inches in the air</li>
         <li>Before the ball hits the table, the server strikes the ball</li>
+        <li>Until the server strikes the ball, the ball should be behind the
+        server's endline</li>
         <li>The ball hits once on the server's side of the table, and then once on the
         receiver's side of the table</li>
         <li>If a serve is legal except that it touches the net, it is called a "let" and
@@ -167,7 +181,7 @@ For disputes, see the
         <li>After two consecutive lets, the point goes to the receiver</li>
     </ul>
     <li>After two points have been scored (i.e. the sum of the scores is even), service switches</li>
-    <li>If the score of a game becomes 10-10</li>
+    <li>If the score of a game becomes 10-10:</li>
     <ul>
         <li>Players must win by two points</li>
         <li>Service switches every point</li>

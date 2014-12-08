@@ -251,4 +251,4 @@ if __name__ == '__main__':
         with open(os.path.join(cwd, 'key.json'), 'w') as f:
             json.dump({'key' : app.secret_key}, f)
     
-    app.run(debug=True, host='0.0.0.0')
+    app.run(debug=False, host='0.0.0.0')
