@@ -149,10 +149,14 @@ def record():
     p2 = request.form['p2']
     s2 = int(request.form['s2'])
 
-    if (not (0 <= s1 < 2 or 0 <= s2 < 2) or
-        not (s1 == 2 or s2 == 2) or
-        not 2 <= s1+s2 <= 3):
-        flash('Ladder is based on 3 game matches only')
+    hi, lo = max(s1, s2), min(s1, s2)
+
+    if (not ((hi == 2 and lo == 0) or
+             (hi == 2 and lo == 1) or
+             (hi == 3 and lo == 0) or
+             (hi == 3 and lo == 1) or
+             (hi == 3 and lo == 2))):
+        flash('Ladder is based on 3 or 5 game matches only')
         return redirect(url_for('index'))
 
     if p1 == p2:
@@ -178,9 +182,16 @@ def record():
         win_alias, win_score, lose_alias, lose_score = p2, s2, p1, s1
     
     date_string = request.form['date'] + ' '
-    date_string += request.form['time'] + ' '
+    if ':' in request.form['time']:
+        date_string += request.form['time'] + ' '
+    else:
+        date_string += request.form['time'] + ':00 '
     date_string += 'PM' if 'ampm' in request.form else 'AM'
-    date = datetime.strptime(date_string, "%m/%d/%Y %I:%M %p")
+    try:
+        date = datetime.strptime(date_string, "%m/%d/%Y %I:%M %p")
+    except:
+        flash('Invalid time format')
+        return redirect(url_for('index'))
     
     db.execute('''
         INSERT INTO 
