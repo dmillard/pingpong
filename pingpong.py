@@ -75,6 +75,8 @@ def index():
             JOIN player l ON loser = l.id
             ORDER BY date DESC LIMIT 10;''')
 
+    games = db.execute('SELECT Count(*) AS TotalMatches FROM match;').fetchone()
+
     # get or regenerate the schedule
     weekrow = db.execute('SELECT * FROM week;').fetchone();
     week = datetime.now().isocalendar()[1]
@@ -115,7 +117,7 @@ def index():
         qualities.append(ts.quality_1vs1(r1, r2) * 100)
 
     return render_template('index.html',
-            players=players, aliases=aliases, recents=recents,
+            players=players, aliases=aliases, recents=recents, games = games[0],
             schedule=zip(schedule, qualities), rankedweek=(week%2==1))
 
 
