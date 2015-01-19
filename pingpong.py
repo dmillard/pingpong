@@ -75,7 +75,7 @@ def index():
             JOIN player l ON loser = l.id
             ORDER BY date DESC LIMIT 10;''')
 
-    games = db.execute('SELECT Count(*) AS TotalMatches FROM match;').fetchone()
+    games = db.execute('SELECT COUNT(id) FROM match;').fetchone()
 
     # get or regenerate the schedule
     weekrow = db.execute('SELECT * FROM week;').fetchone();
