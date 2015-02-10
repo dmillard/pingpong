@@ -263,5 +263,8 @@ if __name__ == '__main__':
         app.secret_key = ''.join(r.choice(key_chars) for i in range(64))
         with open(os.path.join(cwd, 'key.json'), 'w') as f:
             json.dump({'key' : app.secret_key}, f)
+
+    app.config['SESSION_TYPE'] = 'filesystem'
+    sess.init_app(app)
     
     app.run(debug=False, host='0.0.0.0')

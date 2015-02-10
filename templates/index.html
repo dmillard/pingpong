@@ -59,8 +59,7 @@ New players: quick rules are at the bottom of this page.
     <td>nickname</td>
     <td>mu</td>
     <td>sigma</td>
-    <td>won</td>
-    <td>lost</td>
+    <td>win %</td>
 </tr>
 {% for rank, player in players %}
 <tr>
@@ -69,8 +68,11 @@ New players: quick rules are at the bottom of this page.
     <td>{{player["nick"]}}</td>
     <td>{{player["mu"] | round(4)}}</td>
     <td>{{player["sigma"] | round(4)}}</td>
-    <td>{{player["won"]}}</td>
-    <td>{{player["lost"]}}</td>
+    {% if player["won"] + player["lost"] != 0 %}
+    <td>{{(100*player["won"])//(player["won"]+player["lost"])}}%</td>
+    {% else %}
+    <td>no data</td>
+    {% endif %}
 </tr>
 {% endfor %}
 </table>
