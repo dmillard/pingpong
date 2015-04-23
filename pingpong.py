@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS player (
     mu REAL,
     sigma REAL,
     won INTEGER,
-    lost INTEGER
+    lost INTEGER,
+    active BOOLEAN
 );
 
 CREATE INDEX IF NOT EXISTS exposure ON player (exposure);
@@ -64,7 +65,11 @@ def close_connection(exception):
 @app.route('/', methods=['GET'])
 def index():
     db = get_db()
-    players = db.execute('SELECT * FROM player ORDER BY exposure DESC;')
+    players = db.execute('''
+            SELECT *
+            FROM player
+            WHERE active = 1 
+            ORDER BY exposure DESC;''')
     players = Ranking(players.fetchall(), start=1,
             key=lambda x: x['exposure'])
     aliases = db.execute('SELECT alias FROM player ORDER BY alias;')
@@ -85,16 +90,25 @@ def index():
         db.execute('DELETE FROM week;')
         db.execute('INSERT INTO week VALUES (?);', (week,))
 
-        players2 = db.execute(
-                'SELECT * FROM player ORDER BY exposure DESC;').fetchall()
-        if week % 2 == 0: # random week
-            shuffle(players2)
-        players2 = players2[:len(players2)//2*2] # even the number
+        players2 = db.execute('''
+                SELECT *
+                FROM player
+                WHERE active = 1
+                ORDER BY exposure DESC;''').fetchall()
 
-        matches = []
-        for i in range(0, len(players2), 2):
-            p1 = players2[i]
-            p2 = players2[i+1]
+        match_offset = min((week % 5) + 1, len(players2)//2)
+
+        # shuffle bottom of ladder so players get new opponents
+        players2 = players2[:-match_offset] + shuffle(players2[-match_offset:])
+
+        while len(players2) > match_offset:
+            p1 = players2.pop(0)
+            p2 = players2.pop(match_offset)
+            matches.append((p1['id'], p2['id']))
+
+        while len(players) > 1:
+            p1 = players2.pop(0)
+            p2 = players2.pop(1)
             matches.append((p1['id'], p2['id']))
 
         db.executemany('''
@@ -128,8 +142,8 @@ def signup():
         rating = ts.Rating()
         db.execute('''
             INSERT INTO
-            player (alias, nick, mu, sigma, exposure, won, lost)
-            VALUES (?, ?, ?, ?, ?, 0, 0);''',
+            player (alias, nick, mu, sigma, exposure, won, lost, active)
+            VALUES (?, ?, ?, ?, ?, 0, 0, 1);''',
             (request.form['alias'],
              request.form['nick'],
              rating.mu,
